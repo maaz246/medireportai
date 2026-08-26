@@ -126,6 +126,9 @@ JSON STRUCTURE:
       const response = await client.models.generateContent({
         model: "gemini-3.6-flash",
         contents,
+        config: {
+          responseMimeType: "application/json",
+        },
       });
 
       const rawText = response.text || "";
@@ -138,21 +141,17 @@ JSON STRUCTURE:
         const parsed = JSON.parse(cleanedText);
         return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
       } catch (parseErr) {
-        console.warn("JSON parse failed, trying to extract JSON block:", parseErr);
-        // Try to extract JSON from inside the text
+        console.warn("JSON parse failed on raw response, attempting regex extraction:", parseErr);
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          try {
-            const parsed = JSON.parse(jsonMatch[0]);
-            return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
-          } catch {
-            console.error("Could not parse extracted JSON block");
-          }
+          const parsed = JSON.parse(jsonMatch[0]);
+          return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
         }
+        throw new Error("Unable to parse JSON from AI model response");
       }
     }
 
-    // Fallback: API key missing — return a generic report with no fake patient info
+    // Fallback: API key missing — return a generic report
     return NextResponse.json({
       success: true,
       report: {
@@ -169,7 +168,7 @@ JSON STRUCTURE:
         },
         overallStatus: isUrdu
           ? "رپورٹ کا تجزیہ مکمل نہیں ہو سکا - API Key درکار ہے"
-          : "Analysis unavailable — API key not configured",
+          : "Analysis unavailable — GEMINI_API_KEY is not configured",
         overallStatusSeverity: "warning",
         virusAndInfectionDetection: {
           status: isUrdu ? "تجزیہ دستیاب نہیں" : "Analysis unavailable",
@@ -185,10 +184,10 @@ JSON STRUCTURE:
       source: "Fallback"
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Diagnostic Analysis Error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to complete clinical report analysis" },
+      { success: false, error: error?.message || "Failed to complete clinical report analysis" },
       { status: 500 }
     );
   }
