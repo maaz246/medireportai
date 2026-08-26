@@ -1,0 +1,7 @@
+{
+  "/analyze/page": "app/analyze/page.js",
+  "/api/analyze/route": "app/api/analyze/route.js",
+  "/blog/[slug]/page": "app/blog/[slug]/page.js",
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
+  "/page": "app/page.js"
+}

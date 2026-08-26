@@ -1,0 +1,284 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+  --font-urbanist: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background-primary: #000000;
+  --white-color: white;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background-primary);
+  font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+}
+
+.fora-main-heading {
+  font-size: 80px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+}
+
+.fora-hero-section {
+  position: relative;
+  background-color: #04040c;
+  overflow: hidden;
+}
+
+.fora-hero-section::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -15%;
+  width: 75vw;
+  height: 75vw;
+  max-width: 900px;
+  max-height: 900px;
+  background: radial-gradient(circle, rgba(120, 50, 210, 0.5) 0%, rgba(80, 25, 160, 0.25) 50%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: floatAura1 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.fora-hero-section::after {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  right: -15%;
+  width: 80vw;
+  height: 80vw;
+  max-width: 950px;
+  max-height: 950px;
+  background: radial-gradient(circle, rgba(30, 80, 230, 0.55) 0%, rgba(15, 45, 150, 0.3) 50%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(65px);
+  animation: floatAura2 7s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes floatAura1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(14%, 18%) scale(1.18);
+  }
+
+  100% {
+    transform: translate(-8%, 10%) scale(0.92);
+  }
+}
+
+@keyframes floatAura2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(-18%, -15%) scale(1.22);
+  }
+
+  100% {
+    transform: translate(10%, -8%) scale(0.88);
+  }
+}
+
+/* Living Origami Background Animations & Styles */
+@keyframes drift {
+  0% {
+    transform: translateX(-100vw) translateY(var(--y-start)) rotateZ(var(--r-start));
+  }
+
+  100% {
+    transform: translateX(100vw) translateY(var(--y-end)) rotateZ(var(--r-end));
+  }
+}
+
+@keyframes bob {
+
+  0%,
+  100% {
+    transform: translateY(-12px);
+  }
+
+  50% {
+    transform: translateY(12px);
+  }
+}
+
+@keyframes flap-left {
+
+  0%,
+  100% {
+    transform: translateZ(15px) rotateY(-90deg) skewX(20deg) rotateX(15deg);
+  }
+
+  50% {
+    transform: translateZ(15px) rotateY(-90deg) skewX(20deg) rotateX(-25deg);
+  }
+}
+
+@keyframes flap-right {
+
+  0%,
+  100% {
+    transform: translateZ(15px) rotateY(90deg) skewX(-20deg) rotateX(15deg);
+  }
+
+  50% {
+    transform: translateZ(15px) rotateY(90deg) skewX(-20deg) rotateX(-25deg);
+  }
+}
+
+.drifter-container {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  animation: drift linear infinite;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.origami-crane {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  transform-style: preserve-3d;
+  animation: bob 1.5s ease-in-out infinite;
+}
+
+.crane-part {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+}
+
+.crane-part.body {
+  border-width: 0 15px 40px 15px;
+  border-color: transparent transparent rgba(255, 255, 255, 0.9) transparent;
+  transform: rotateX(30deg);
+}
+
+.crane-part.wing-left {
+  border-width: 0 30px 50px 0;
+  border-color: transparent rgba(255, 255, 255, 0.75) transparent transparent;
+  transform-origin: right center;
+  animation: flap-left 0.6s ease-in-out infinite;
+}
+
+.crane-part.wing-right {
+  border-width: 0 0 50px 30px;
+  border-color: transparent transparent transparent rgba(255, 255, 255, 0.75);
+  transform-origin: left center;
+  animation: flap-right 0.6s ease-in-out infinite;
+}
+
+.crane-part.tail {
+  border-width: 30px 10px 0 10px;
+  border-color: rgba(255, 255, 255, 0.6) transparent transparent transparent;
+  transform: translateZ(-10px) rotateX(-40deg);
+}
+
+/* Blog Card Pop-up Scroll Animation */
+@keyframes popUpScroll {
+  0% {
+    opacity: 0;
+    transform: translateY(50px) scale(0.92);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-pop-up {
+  animation: popUpScroll 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modern AI Heading Glow & Gradient Animations */
+@keyframes aiGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(168, 85, 247, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(6, 182, 212, 0.7), 0 0 60px rgba(236, 72, 153, 0.5);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-ai-glow {
+  animation: aiGlowPulse 3s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
+/* Print Stylesheet for High-Quality Medical Report PDF Generation */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  
+  #printable-report,
+  #printable-report * {
+    visibility: visible !important;
+  }
+  
+  #printable-report {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 20px !important;
+  }
+
+  #printable-report h2,
+  #printable-report h3,
+  #printable-report h4,
+  #printable-report td {
+    color: #000000 !important;
+  }
+
+  #printable-report table {
+    border: 1px solid #e5e7eb !important;
+  }
+
+  #printable-report th {
+    background-color: #f3f4f6 !important;
+    color: #374151 !important;
+  }
+}
