@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${urbanist.variable} h-full antialiased`}>
-      <body className="min-h-screen font-sans bg-black text-white antialiased">
+    <html lang="en" className={`${urbanist.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-screen font-sans bg-black text-white antialiased" suppressHydrationWarning>
         <LanguageProvider>
           <CustomCursor />
           <Header />

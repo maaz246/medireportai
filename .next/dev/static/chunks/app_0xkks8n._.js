@@ -1939,90 +1939,113 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__default__export__
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 ;
+var _s = __turbopack_context__.k.signature();
+"use client";
+;
+// This is a self-contained React component that creates a "Living Origami" effect.
+// An evolution of procedural animation, this simulates a flock of glowing origami
+// birds flying across the screen. The effect is achieved with CSS 3D transforms
+// and a procedurally generated set of layered animations.
+// Generate a random number within a range
+const random = (min, max)=>Math.random() * (max - min) + min;
 const Component = ()=>{
-    // Generate a random number within a range
-    const random = (min, max)=>Math.random() * (max - min) + min;
+    _s();
+    const [drifters, setDrifters] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "Component.useEffect": ()=>{
+            // Only generate random values on the client to prevent hydration mismatch
+            setDrifters([
+                ...Array(18)
+            ].map({
+                "Component.useEffect": ()=>({
+                        yStart: random(-30, 30),
+                        yEnd: random(-30, 30),
+                        rStart: random(-30, 30),
+                        rEnd: random(-30, 30),
+                        duration: random(8, 16),
+                        delay: random(-16, 0),
+                        scale: random(0.3, 0.95),
+                        wingDelay: random(-4, 0)
+                    })
+            }["Component.useEffect"]));
+        }
+    }["Component.useEffect"], []);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "hero-section absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0",
         children: [
-            [
-                ...Array(18)
-            ].map((_, i)=>{
-                const duration = random(8, 16);
-                const delay = random(-16, 0);
-                const scale = random(0.3, 0.95);
-                return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            drifters.map((d, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "drifter-container",
                     style: {
-                        '--y-start': `${random(-30, 30)}vh`,
-                        '--y-end': `${random(-30, 30)}vh`,
-                        '--r-start': `${random(-30, 30)}deg`,
-                        '--r-end': `${random(-30, 30)}deg`,
-                        animationDuration: `${duration}s`,
-                        animationDelay: `${delay}s`
+                        '--y-start': `${d.yStart}vh`,
+                        '--y-end': `${d.yEnd}vh`,
+                        '--r-start': `${d.rStart}deg`,
+                        '--r-end': `${d.rEnd}deg`,
+                        animationDuration: `${d.duration}s`,
+                        animationDelay: `${d.delay}s`
                     },
                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "origami-crane",
                         style: {
-                            transform: `scale(${scale})`,
-                            animationDelay: `${random(-4, 0)}s`
+                            transform: `scale(${d.scale})`,
+                            animationDelay: `${d.wingDelay}s`
                         },
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "crane-part body"
                             }, void 0, false, {
                                 fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                                lineNumber: 33,
-                                columnNumber: 29
+                                lineNumber: 58,
+                                columnNumber: 25
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "crane-part wing-left"
                             }, void 0, false, {
                                 fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                                lineNumber: 34,
-                                columnNumber: 29
+                                lineNumber: 59,
+                                columnNumber: 25
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "crane-part wing-right"
                             }, void 0, false, {
                                 fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                                lineNumber: 35,
-                                columnNumber: 29
+                                lineNumber: 60,
+                                columnNumber: 25
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "crane-part tail"
                             }, void 0, false, {
                                 fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                                lineNumber: 36,
-                                columnNumber: 29
+                                lineNumber: 61,
+                                columnNumber: 25
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                        lineNumber: 29,
-                        columnNumber: 25
+                        lineNumber: 54,
+                        columnNumber: 21
                     }, ("TURBOPACK compile-time value", void 0))
                 }, i, false, {
                     fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                    lineNumber: 21,
-                    columnNumber: 21
-                }, ("TURBOPACK compile-time value", void 0));
-            }),
+                    lineNumber: 46,
+                    columnNumber: 17
+                }, ("TURBOPACK compile-time value", void 0))),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "relative z-10 text-center p-8 max-w-2xl"
             }, void 0, false, {
                 fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-                lineNumber: 43,
+                lineNumber: 67,
                 columnNumber: 13
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/app/components/ui/living-origami-bg.tsx",
-        lineNumber: 13,
+        lineNumber: 43,
         columnNumber: 9
     }, ("TURBOPACK compile-time value", void 0));
 };
+_s(Component, "Uh0Tbl/8cqgwj5hd19kijkqCNXU=");
 _c = Component;
 const __TURBOPACK__default__export__ = Component;
 var _c;
