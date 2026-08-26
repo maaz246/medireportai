@@ -239,28 +239,65 @@ ${activeReport.doctorRecommendations.map((r) => `- ${r}`).join("\n")}
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // High-Resolution Native Vector PDF Generator (Full Unicode & Urdu RTL Support)
-  const handleDownloadPdf = () => {
-    if (!activeReport) return;
+  // High-Resolution Dark-Mode PDF Auto-Downloader (Preserves Exact On-Screen AI Layout & Urdu Typography)
+  const handleDownloadPdf = async () => {
+    if (!activeReport || !reportContainerRef.current) return;
     setIsGeneratingPdf(true);
 
     try {
-      const originalTitle = document.title;
+      const { toPng } = await import("html-to-image");
+      const { jsPDF } = await import("jspdf");
+
+      const element = reportContainerRef.current;
+
+      // Render exact DOM node into a high-res 2x PNG (supports all fonts, Urdu ligatures, dark glows, and CSS3)
+      const dataUrl = await toPng(element, {
+        quality: 0.98,
+        pixelRatio: 2, // 2x crisp scale for high-definition print quality
+        backgroundColor: "#050508", // matching dark clinical aesthetic
+        cacheBust: true,
+      });
+
+      // Load image into memory to get natural dimensions
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = 210; // A4 standard width in mm
+      const pageHeight = 297; // A4 standard height in mm
+      const imgHeight = (img.height * pdfWidth) / img.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
+      heightLeft -= pageHeight;
+
+      // Add subsequent pages if report spans more than one A4 page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
+        heightLeft -= pageHeight;
+      }
+
       const rawName = activeReport.patientInfo?.name || activeReport.title || "Diagnostic_Report";
       const safeName = rawName.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, "_");
-      
-      // Set document title so the browser automatically names the saved PDF appropriately
-      document.title = `MediReport_${safeName}`;
 
-      // Trigger native browser print dialog (Save as PDF)
-      window.print();
-
-      // Restore original title
-      setTimeout(() => {
-        document.title = originalTitle;
-      }, 1000);
+      // Automatically trigger instant file download in browser
+      pdf.save(`MediReport_${safeName}.pdf`);
     } catch (err) {
-      console.error("PDF generation error:", err);
+      console.error("High-fidelity PDF auto-download error:", err);
+      // Fallback: window.print if device doesn't support canvas export
+      window.print();
     } finally {
       setIsGeneratingPdf(false);
     }
