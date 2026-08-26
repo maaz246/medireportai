@@ -245,6 +245,19 @@ body {
 
 /* Print Stylesheet for High-Quality Medical Report PDF Generation */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body * {
     visibility: hidden !important;
   }
@@ -259,26 +272,44 @@ body {
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
-    background-color: #ffffff !important;
+    background: #ffffff !important;
     color: #111827 !important;
-    border: none !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
     box-shadow: none !important;
-    padding: 20px !important;
+    padding: 16px 20px !important;
   }
 
   #printable-report h2,
   #printable-report h3,
   #printable-report h4,
-  #printable-report td {
-    color: #000000 !important;
+  #printable-report p,
+  #printable-report span,
+  #printable-report td,
+  #printable-report th {
+    color: #111827 !important;
+  }
+
+  #printable-report div {
+    background-color: transparent !important;
+    border-color: #e5e7eb !important;
   }
 
   #printable-report table {
-    border: 1px solid #e5e7eb !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1px solid #d1d5db !important;
   }
 
   #printable-report th {
     background-color: #f3f4f6 !important;
-    color: #374151 !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
+    font-weight: 700 !important;
+  }
+
+  #printable-report td {
+    border: 1px solid #e5e7eb !important;
+    color: #111827 !important;
   }
 }

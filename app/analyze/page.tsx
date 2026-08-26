@@ -239,56 +239,28 @@ ${activeReport.doctorRecommendations.map((r) => `- ${r}`).join("\n")}
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // High-Fidelity Multi-Language PDF Generator (Supports English & Urdu RTL Fonts)
-  const handleDownloadPdf = async () => {
-    if (!activeReport || !reportContainerRef.current) return;
+  // High-Resolution Native Vector PDF Generator (Full Unicode & Urdu RTL Support)
+  const handleDownloadPdf = () => {
+    if (!activeReport) return;
     setIsGeneratingPdf(true);
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
-
-      const element = reportContainerRef.current;
-
-      // Render the DOM report node to high-res canvas (native browser font rendering preserves Urdu RTL ligatures)
-      const canvas = await html2canvas(element, {
-        scale: 2, // 2x crisp scale for high-definition print quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#0a0a0c", // matches dark medical container
-        windowWidth: 1200,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pdfWidth = 210; // A4 standard width in mm
-      const pageHeight = 297; // A4 standard height in mm
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
-      heightLeft -= pageHeight;
-
-      // Add subsequent pages if the report spans more than one page
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
-        heightLeft -= pageHeight;
-      }
-
-      const rawName = activeReport.patientInfo?.name || activeReport.title || "Medical_Report";
+      const originalTitle = document.title;
+      const rawName = activeReport.patientInfo?.name || activeReport.title || "Diagnostic_Report";
       const safeName = rawName.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, "_");
-      pdf.save(`MediReport_${safeName}.pdf`);
+      
+      // Set document title so the browser automatically names the saved PDF appropriately
+      document.title = `MediReport_${safeName}`;
+
+      // Trigger native browser print dialog (Save as PDF)
+      window.print();
+
+      // Restore original title
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1000);
     } catch (err) {
-      console.error("High-fidelity PDF generation error:", err);
+      console.error("PDF generation error:", err);
     } finally {
       setIsGeneratingPdf(false);
     }
