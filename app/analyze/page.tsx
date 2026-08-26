@@ -239,208 +239,56 @@ ${activeReport.doctorRecommendations.map((r) => `- ${r}`).join("\n")}
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // Pure jsPDF Direct Document Builder - Instant File Download with Black Text & Light Medical Layout
+  // High-Fidelity Multi-Language PDF Generator (Supports English & Urdu RTL Fonts)
   const handleDownloadPdf = async () => {
-    if (!activeReport) return;
+    if (!activeReport || !reportContainerRef.current) return;
     setIsGeneratingPdf(true);
 
     try {
+      const html2canvas = (await import("html2canvas")).default;
       const { jsPDF } = await import("jspdf");
 
+      const element = reportContainerRef.current;
+
+      // Render the DOM report node to high-res canvas (native browser font rendering preserves Urdu RTL ligatures)
+      const canvas = await html2canvas(element, {
+        scale: 2, // 2x crisp scale for high-definition print quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#0a0a0c", // matches dark medical container
+        windowWidth: 1200,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a4"
+        format: "a4",
       });
 
-      const pageWidth = 210;
-      const pageHeight = 297;
-      let y = 15;
+      const pdfWidth = 210; // A4 standard width in mm
+      const pageHeight = 297; // A4 standard height in mm
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
 
-      const checkPageBreak = (neededHeight: number) => {
-        if (y + neededHeight > pageHeight - 15) {
-          pdf.addPage();
-          y = 15;
-        }
-      };
+      // Add first page
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
+      heightLeft -= pageHeight;
 
-      // Header Banner Box
-      pdf.setFillColor(15, 23, 42); // Slate banner
-      pdf.rect(0, 0, pageWidth, 28, "F");
-
-      pdf.setTextColor(56, 189, 248); // Cyan title
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(16);
-      pdf.text("MEDIREPORT DIAGNOSTIC SYSTEM", 12, 12);
-
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(9);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`OFFICIAL MEDICAL REPORT • DATE: ${activeReport.date}`, 12, 20);
-
-      y = 36;
-
-      // Report Main Title & Status
-      pdf.setTextColor(0, 0, 0); // Pure Black Font for crisp readability
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text(activeReport.title || "Diagnostic Report", 12, y);
-      y += 6;
-
-      pdf.setFontSize(9.5);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(75, 85, 99);
-      pdf.text(`Category: ${activeReport.category}`, 12, y);
-      y += 8;
-
-      // Patient Info Grid Box
-      const p = activeReport.patientInfo;
-      pdf.setFillColor(243, 244, 246); // Light gray background
-      pdf.setDrawColor(209, 213, 219);
-      pdf.rect(12, y, pageWidth - 24, 28, "FD");
-
-      pdf.setTextColor(0, 0, 0); // Bold Black Text
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9.5);
-      pdf.text("PATIENT INFORMATION", 16, y + 6);
-
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(`Patient Name: ${p?.name || activeReport.patient || "Patient File"}`, 16, y + 13);
-      pdf.text(`Age & Gender: ${p?.age || "N/A"} • ${p?.gender || "N/A"}`, 16, y + 19);
-      pdf.text(`Specimen / Sample ID: ${p?.specimenId || "N/A"}`, 16, y + 24);
-
-      pdf.text(`Referring Doctor: ${p?.referringDoctor || "N/A"}`, 110, y + 13);
-      pdf.text(`Facility: ${p?.facility || "N/A"}`, 110, y + 19);
-      pdf.text(`Diagnostic Assessment: ${activeReport.overallStatus}`, 110, y + 24);
-
-      y += 34;
-
-      // Virus & Infection Screening Box
-      if (activeReport.virusAndInfectionDetection) {
-        checkPageBreak(28);
-        const v = activeReport.virusAndInfectionDetection;
-        pdf.setFillColor(245, 243, 255); // Light purple box
-        pdf.setDrawColor(221, 214, 254);
-        pdf.rect(12, y, pageWidth - 24, 24, "FD");
-
-        pdf.setTextColor(109, 40, 217);
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(9.5);
-        pdf.text("VIRUS & PATHOGEN INFECTION SCREENING", 16, y + 6);
-
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(8.5);
-        pdf.text(`Status: ${v.status}`, 16, y + 12);
-
-        pdf.setFont("helvetica", "normal");
-        const vDetails = pdf.splitTextToSize(`Details: ${v.details}`, pageWidth - 32);
-        pdf.text(vDetails, 16, y + 17);
-
-        y += 28;
+      // Add subsequent pages if the report spans more than one page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
+        heightLeft -= pageHeight;
       }
 
-      // Pathology & Sickness Explanations Section
-      if (activeReport.sicknessExplanations && activeReport.sicknessExplanations.length > 0) {
-        checkPageBreak(30);
-        pdf.setTextColor(0, 0, 0); // Black Font
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(10);
-        pdf.text("PATHOLOGY & SICKNESS DIAGNOSTIC EXPLANATIONS", 12, y);
-        y += 6;
-
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(8.5);
-        pdf.setTextColor(17, 24, 39);
-
-        for (const exp of activeReport.sicknessExplanations) {
-          const wrappedExp = pdf.splitTextToSize(`• ${exp}`, pageWidth - 24);
-          checkPageBreak(wrappedExp.length * 4.5);
-          pdf.text(wrappedExp, 12, y);
-          y += wrappedExp.length * 4.5 + 2;
-        }
-        y += 3;
-      }
-
-      // Biomarkers Table Header
-      checkPageBreak(40);
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(10);
-      pdf.text("EXTRACTED LAB BIOMARKERS & CLINICAL MEASUREMENTS", 12, y);
-      y += 6;
-
-      pdf.setFillColor(229, 231, 235);
-      pdf.rect(12, y, pageWidth - 24, 7, "F");
-      pdf.setFontSize(8);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(31, 41, 55);
-      pdf.text("Biomarker Parameter", 15, y + 5);
-      pdf.text("Measured Value", 75, y + 5);
-      pdf.text("Reference Range", 120, y + 5);
-      pdf.text("Status Flag", 170, y + 5);
-      y += 7;
-
-      // Table Rows
-      pdf.setFont("helvetica", "normal");
-      for (const b of activeReport.biomarkers || []) {
-        checkPageBreak(10);
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont("helvetica", "bold");
-        pdf.text(b.name, 15, y + 5);
-
-        pdf.setFont("helvetica", "normal");
-        pdf.text(`${b.value} ${b.unit}`, 75, y + 5);
-        pdf.text(b.refRange, 120, y + 5);
-
-        // Status Flag Badge Color
-        if (b.flag === "danger") pdf.setTextColor(220, 38, 38);
-        else if (b.flag === "warning") pdf.setTextColor(217, 119, 6);
-        else pdf.setTextColor(5, 150, 105);
-        pdf.setFont("helvetica", "bold");
-        pdf.text(b.status, 170, y + 5);
-
-        y += 7;
-        pdf.setDrawColor(243, 244, 246);
-        pdf.line(12, y, pageWidth - 12, y);
-        y += 2;
-      }
-
-      y += 4;
-
-      // Physician Recommendations
-      checkPageBreak(30);
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(10);
-      pdf.text("PHYSICIAN ACTION ITEMS & CLINICAL RECOMMENDATIONS", 12, y);
-      y += 6;
-
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(31, 41, 55);
-      for (const rec of activeReport.doctorRecommendations || []) {
-        const wrappedRec = pdf.splitTextToSize(`• ${rec}`, pageWidth - 24);
-        checkPageBreak(wrappedRec.length * 4.5);
-        pdf.text(wrappedRec, 12, y);
-        y += wrappedRec.length * 4.5 + 2;
-      }
-
-      // Page Footers
-      const totalPages = (pdf.internal as unknown as { pages: unknown[] }).pages.length - 1;
-      for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(156, 163, 175);
-        pdf.text(`MediReport Official Clinical Document • Confidential Medical Summary • Page ${i} of ${totalPages}`, 12, 290);
-      }
-
-      const safeName = (p?.name || activeReport.title).replace(/[^a-zA-Z0-9]/g, "_");
+      const rawName = activeReport.patientInfo?.name || activeReport.title || "Medical_Report";
+      const safeName = rawName.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, "_");
       pdf.save(`MediReport_${safeName}.pdf`);
     } catch (err) {
-      console.error("Direct PDF generation error:", err);
+      console.error("High-fidelity PDF generation error:", err);
     } finally {
       setIsGeneratingPdf(false);
     }
