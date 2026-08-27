@@ -25,8 +25,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
       ur: "بانی اور ویژنری"
     },
     bio: {
-      en: "5th year Pharm D student at Karachi University.",
-      ur: "کراچی یونیورسٹی میں 5 ویں سال کی ڈی فارمیسی کی طالبہ۔"
+      en: "4th year Pharm D student at Karachi University.",
+      ur: "کراچی یونیورسٹی میں 4 ویں سال کی ڈی فارمیسی کی طالبہ۔"
     },
     image: "/team/syeda-ayesha-naz.jpg",
     socials: { linkedin: "#", instagram: "#" }
@@ -39,8 +39,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
       ur: "یو آئی / یو ایکس ڈزائنر"
     },
     bio: {
-      en: "5th year Pharm D student at Karachi University.",
-      ur: "کراچی یونیورسٹی میں 5 ویں سال کی ڈی فارمیسی کی طالبہ۔"
+      en: "4th year Pharm D student at Karachi University.",
+      ur: "کراچی یونیورسٹی میں 4 ویں سال کی ڈی فارمیسی کی طالبہ۔"
     },
     image: "/team/manal-adnan.jfif",
     socials: { linkedin: "#", instagram: "#" }
@@ -53,8 +53,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
       ur: "ڈیٹا کلکٹر"
     },
     bio: {
-      en: "5th year Pharm D student at Karachi University.",
-      ur: "کراچی یونیورسٹی میں 5 ویں سال کی ڈی فارمیسی کی طالبہ۔"
+      en: "4th year Pharm D student at Karachi University.",
+      ur: "کراچی یونیورسٹی میں 4 ویں سال کی ڈی فارمیسی کی طالبہ۔"
     },
     image: "/team/iqra-m-samad.jpg",
     socials: { linkedin: "#", instagram: "#" }
@@ -67,10 +67,10 @@ export const TEAM_MEMBERS: TeamMember[] = [
       ur: "ڈیٹا کلکٹر"
     },
     bio: {
-      en: "5th year Pharm D student at Karachi University.",
-      ur: "کراچی یونیورسٹی میں 5 ویں سال کی ڈی فارمیسی کی طالبہ۔"
+      en: "4th year Pharm D student at Karachi University.",
+      ur: "کراچی یونیورسٹی میں 4 ویں سال کی ڈی فارمیسی کی طالبہ۔"
     },
-    image: "/team/sara-habib.jpg",
+    image: "/team/sarah-habib.png",
     socials: { linkedin: "#", instagram: "#" }
   }
 ];
