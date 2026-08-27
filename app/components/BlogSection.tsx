@@ -61,12 +61,16 @@ export default function BlogSection() {
             >
               {/* Card Image Container */}
               <div className="relative w-full h-48 overflow-hidden bg-neutral-900">
-                <img
+                <Image
                   src={post.image}
                   alt={post.title[lang]}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  quality={80}
                 />
-                <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-[11px] font-medium text-gray-200 px-2.5 py-1 rounded-md border border-white/10">
+                <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-[11px] font-medium text-gray-200 px-2.5 py-1 rounded-md border border-white/10 z-10">
                   {post.category[lang]}
                 </span>
               </div>

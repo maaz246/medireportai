@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, notFound } from "next/navigation";
 import { BLOG_POSTS } from "../../data/blogs";
 import { useLanguage } from "../../context/LanguageContext";
@@ -66,10 +67,14 @@ export default function BlogDetailPage() {
 
         {/* Hero Image */}
         <div className="w-full h-[320px] md:h-[450px] rounded-2xl overflow-hidden mb-12 border border-white/10 shadow-2xl relative">
-          <img
+          <Image
             src={post.image}
             alt={post.title[lang]}
-            className="w-full h-full object-cover"
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 896px"
+            className="object-cover"
+            quality={85}
           />
         </div>
 

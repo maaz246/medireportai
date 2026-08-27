@@ -46,6 +46,8 @@ body {
   filter: blur(60px);
   animation: floatAura1 6s ease-in-out infinite alternate;
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .fora-hero-section::after {
@@ -62,6 +64,8 @@ body {
   filter: blur(65px);
   animation: floatAura2 7s ease-in-out infinite alternate;
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 @keyframes floatAura1 {
@@ -146,6 +150,7 @@ body {
   animation: drift linear infinite;
   transform-style: preserve-3d;
   pointer-events: none;
+  will-change: transform;
 }
 
 .origami-crane {
@@ -154,6 +159,7 @@ body {
   height: 60px;
   transform-style: preserve-3d;
   animation: bob 1.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 .crane-part {

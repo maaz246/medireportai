@@ -156,38 +156,64 @@ JSON STRUCTURE:
         }];
       }
 
-      // Try candidate models in order of capability and availability
+      // Candidate models in order of quota availability and performance
       const candidateModels = [
         "gemini-3.6-flash",
+        "gemini-3.1-flash-lite-preview",
         "gemini-2.5-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-2.5-pro"
+        "gemini-3.1-pro-preview",
       ];
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let response: any = null;
       let lastModelError: any = null;
+      let isQuotaExceeded = false;
 
       for (const model of candidateModels) {
-        try {
-          response = await client.models.generateContent({
-            model,
-            contents,
-            config: {
-              responseMimeType: "application/json",
-            },
-          });
-          if (response && response.text) {
-            break;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            response = await client.models.generateContent({
+              model,
+              contents,
+              config: {
+                responseMimeType: "application/json",
+              },
+            });
+            if (response && response.text) {
+              break;
+            }
+          } catch (err: any) {
+            const msg = err?.message || String(err);
+            console.warn(`Model ${model} (attempt ${attempt}) failed:`, msg);
+            lastModelError = err;
+
+            // Check for rate limit / quota exhaustion (429)
+            if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || err?.status === 429) {
+              isQuotaExceeded = true;
+              // If it's a short per-second delay, wait briefly before next model
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+            } else if (attempt < 2 && (msg.includes("503") || msg.includes("demand") || err?.status === 503)) {
+              // Temporary server demand spike
+              await new Promise((resolve) => setTimeout(resolve, 1200));
+            } else {
+              // If model not found or permanent error, skip immediately to next model
+              break;
+            }
           }
-        } catch (err: any) {
-          console.warn(`Model ${model} attempt failed:`, err?.message || err);
-          lastModelError = err;
+        }
+        if (response && response.text) {
+          break;
         }
       }
 
       if (!response || !response.text) {
+        if (isQuotaExceeded) {
+          const quotaMsg = isUrdu
+            ? "جیمنی اے آئی فری کوٹہ کی عارضی حد (Rate Limit) مکمل ہو چکی ہے۔ براہ کرم 10 سیکنڈ انتظار کے بعد دوبارہ کوشش کریں۔"
+            : "Gemini API free tier rate limit reached (requests per minute limit). Please wait ~10 seconds and try again, or use an API key with higher quota.";
+          return NextResponse.json({ success: false, error: quotaMsg }, { status: 429 });
+        }
         throw new Error(lastModelError?.message || "Failed to generate report with available AI models");
       }
 
@@ -222,9 +248,16 @@ JSON STRUCTURE:
 
   } catch (error: any) {
     console.error("Diagnostic Analysis Error:", error);
+    const msg = error?.message || "Failed to complete clinical report analysis";
+    const isQuota = msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded");
     return NextResponse.json(
-      { success: false, error: error?.message || "Failed to complete clinical report analysis" },
-      { status: 500 }
+      {
+        success: false,
+        error: isQuota
+          ? "Gemini API rate limit reached. Please wait 10 seconds and try again."
+          : msg
+      },
+      { status: isQuota ? 429 : 500 }
     );
   }
 }

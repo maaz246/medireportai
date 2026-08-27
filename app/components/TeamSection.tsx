@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { TEAM_MEMBERS } from "../data/team";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -60,12 +61,16 @@ export default function TeamSection() {
             >
               {/* Card Image Container */}
               <div className="relative w-full h-72 overflow-hidden bg-neutral-900">
-                <img
+                <Image
                   src={member.image}
                   alt={member.name}
-                  className="w-full h-full object-cover object-[center_15%] group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover object-[center_15%] group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  quality={85}
                 />
-                <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-[11px] font-medium text-indigo-300 px-2.5 py-1 rounded-md border border-white/10">
+                <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-[11px] font-medium text-indigo-300 px-2.5 py-1 rounded-md border border-white/10 z-10">
                   {lang === "ur" ? "ٹیم ممبر" : "Team Member"}
                 </span>
               </div>
