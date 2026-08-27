@@ -1,6 +1,37 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
+// Vercel serverless function max execution time (up to 60s)
+export const maxDuration = 60;
+
+function resolveMimeType(mime?: string | null, fileName?: string | null): string {
+  const ext = fileName?.split(".").pop()?.toLowerCase();
+  if (mime && mime !== "application/octet-stream" && mime.includes("/")) {
+    return mime;
+  }
+  switch (ext) {
+    case "pdf":
+      return "application/pdf";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "heic":
+      return "image/heic";
+    case "heif":
+      return "image/heif";
+    case "txt":
+      return "text/plain";
+    case "csv":
+      return "text/csv";
+    default:
+      return "application/pdf";
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -83,10 +114,12 @@ JSON STRUCTURE:
 }
 `.trim();
 
+      const finalMime = resolveMimeType(mimeType || fileType, fileName);
+      const isTextFile = !fileBase64 || finalMime.startsWith("text/") || fileName?.endsWith(".txt") || fileName?.endsWith(".csv");
+
       // Build the content parts for Gemini — use multimodal for PDF/image files
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let contents: any[];
-      const isTextFile = !fileBase64 || fileType?.includes("text") || (mimeType || "").includes("text");
 
       if (isTextFile && fileText) {
         // Plain text report: send as text
@@ -94,10 +127,10 @@ JSON STRUCTURE:
           role: "user",
           parts: [
             { text: instructions },
-            { text: `\n\nREPORT TEXT CONTENT:\n---\n${fileText.slice(0, 8000)}\n---\n\nFile name: ${fileName || "report"}` }
+            { text: `\n\nREPORT TEXT CONTENT:\n---\n${fileText.slice(0, 10000)}\n---\n\nFile name: ${fileName || "report"}` }
           ]
         }];
-      } else if (fileBase64 && mimeType) {
+      } else if (fileBase64) {
         // PDF, image or binary — send as inline base64 for Gemini to directly read
         contents = [{
           role: "user",
@@ -105,7 +138,7 @@ JSON STRUCTURE:
             { text: instructions },
             {
               inlineData: {
-                mimeType: mimeType,
+                mimeType: finalMime,
                 data: fileBase64
               }
             },
@@ -123,13 +156,40 @@ JSON STRUCTURE:
         }];
       }
 
-      const response = await client.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents,
-        config: {
-          responseMimeType: "application/json",
-        },
-      });
+      // Try candidate models in order of capability and availability
+      const candidateModels = [
+        "gemini-3.6-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.5-pro"
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let response: any = null;
+      let lastModelError: any = null;
+
+      for (const model of candidateModels) {
+        try {
+          response = await client.models.generateContent({
+            model,
+            contents,
+            config: {
+              responseMimeType: "application/json",
+            },
+          });
+          if (response && response.text) {
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`Model ${model} attempt failed:`, err?.message || err);
+          lastModelError = err;
+        }
+      }
+
+      if (!response || !response.text) {
+        throw new Error(lastModelError?.message || "Failed to generate report with available AI models");
+      }
 
       const rawText = response.text || "";
       const cleanedText = rawText
@@ -151,38 +211,14 @@ JSON STRUCTURE:
       }
     }
 
-    // Fallback: API key missing — return a generic report
-    return NextResponse.json({
-      success: true,
-      report: {
-        title: isUrdu ? `طبی رپورٹ تجزیہ` : `Medical Report Analysis`,
-        category: isUrdu ? "کلینیکل پیتھالوجی" : "Clinical Pathology",
-        date: new Date().toLocaleDateString(isUrdu ? "ur-PK" : "en-US", { month: "short", day: "numeric", year: "numeric" }),
-        patientInfo: {
-          name: isUrdu ? "دستیاب نہیں" : "Not Available",
-          age: isUrdu ? "دستیاب نہیں" : "Not Available",
-          gender: isUrdu ? "دستیاب نہیں" : "Not Available",
-          specimenId: "N/A",
-          referringDoctor: isUrdu ? "دستیاب نہیں" : "Not Available",
-          facility: isUrdu ? "دستیاب نہیں" : "Not Available",
-        },
-        overallStatus: isUrdu
-          ? "رپورٹ کا تجزیہ مکمل نہیں ہو سکا - API Key درکار ہے"
-          : "Analysis unavailable — GEMINI_API_KEY is not configured",
-        overallStatusSeverity: "warning",
-        virusAndInfectionDetection: {
-          status: isUrdu ? "تجزیہ دستیاب نہیں" : "Analysis unavailable",
-          hasDetection: false,
-          detectedPathogens: [],
-          details: isUrdu ? "براہ کرم GEMINI_API_KEY سیٹ کریں" : "Please configure GEMINI_API_KEY to enable analysis.",
-        },
-        sicknessExplanations: [],
-        biomarkers: [],
-        insights: [],
-        doctorRecommendations: [],
+    // Fallback: API key missing
+    return NextResponse.json(
+      {
+        success: false,
+        error: "GEMINI_API_KEY is not configured in environment variables. Please add GEMINI_API_KEY in your Vercel Project Settings."
       },
-      source: "Fallback"
-    });
+      { status: 500 }
+    );
 
   } catch (error: any) {
     console.error("Diagnostic Analysis Error:", error);
@@ -192,3 +228,4 @@ JSON STRUCTURE:
     );
   }
 }
+

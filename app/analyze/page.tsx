@@ -69,6 +69,195 @@ interface ReportData {
   doctorRecommendations: string[];
 }
 
+// Generate clean HTML string for PDF rendering
+function generateReportHtml(report: ReportData, isUrdu: boolean): string {
+  const p = report.patientInfo;
+  const patientName = p?.name || report.patient || (isUrdu ? "دستیاب نہیں" : "Not Available");
+  const patientAge = p?.age || (isUrdu ? "دستیاب نہیں" : "N/A");
+  const patientGender = p?.gender || (isUrdu ? "دستیاب نہیں" : "N/A");
+  const specimenId = p?.specimenId || "N/A";
+  const doctor = p?.referringDoctor || (isUrdu ? "دستیاب نہیں" : "Not Available");
+  const facility = p?.facility || (isUrdu ? "دستیاب نہیں" : "Not Available");
+
+  const severityColor = report.overallStatusSeverity === "danger"
+    ? "#b91c1c"
+    : report.overallStatusSeverity === "warning"
+      ? "#b45309"
+      : "#15803d";
+
+  const biomarkersRows = (report.biomarkers || []).map((b, idx) => {
+    const flagColor = b.flag === "danger" ? "#b91c1c" : b.flag === "warning" ? "#b45309" : "#15803d";
+    return `
+      <tr style="background-color: ${idx % 2 === 0 ? "#ffffff" : "#f8fafc"}; border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a; font-weight: 600; font-size: 11px;">
+          ${b.name}
+          ${b.explanation ? `<div style="font-size: 9.5px; color: #64748b; font-weight: normal; margin-top: 2px;">${b.explanation}</div>` : ""}
+        </td>
+        <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; font-weight: 700; color: #0f172a; font-size: 11px;">
+          ${b.value} ${b.unit || ""}
+        </td>
+        <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #475569; font-size: 11px;">
+          ${b.refRange || "—"}
+        </td>
+        <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; font-weight: 700; color: ${flagColor}; font-size: 11px;">
+          ${b.status}
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  const sicknessList = (report.sicknessExplanations || []).map((s) => `
+    <li style="margin-bottom: 3px;">${s}</li>
+  `).join("");
+
+  const doctorList = (report.doctorRecommendations || []).map((r) => `
+    <li style="margin-bottom: 3px;">${r}</li>
+  `).join("");
+
+  return `
+    <div style="width: 794px; background-color: #ffffff; color: #0f172a; font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', 'Urdu Typesetting', Arial, sans-serif; padding: 28px 34px; box-sizing: border-box; line-height: 1.45;" dir="${isUrdu ? "rtl" : "ltr"}">
+      
+      <!-- Report Header -->
+      <div style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <h1 style="font-size: 20px; font-weight: 800; margin: 0 0 4px 0; color: #0f172a;">
+            ${report.title || (isUrdu ? "جامع طبی تشخیصی رپورٹ" : "Clinical Diagnostic Report")}
+          </h1>
+          <p style="font-size: 11px; color: #475569; margin: 0; font-weight: 600;">
+            ${report.category || (isUrdu ? "کلینیکل پیتھالوجی" : "Clinical Pathology")} • MediReport AI Diagnostic Engine
+          </p>
+        </div>
+        <div style="text-align: ${isUrdu ? "left" : "right"};">
+          <p style="font-size: 12px; font-weight: 700; color: #0f172a; margin: 0;">
+            ${report.date}
+          </p>
+          <p style="font-size: 10px; color: #64748b; margin: 2px 0 0 0;">
+            ${isUrdu ? "خفیہ طبی دستاویز" : "Confidential Medical Report"}
+          </p>
+        </div>
+      </div>
+
+      <!-- 2-Column Patient Details Box -->
+      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; background-color: #f8fafc;">
+        <h2 style="font-size: 11.5px; font-weight: 700; margin: 0 0 8px 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+          ${isUrdu ? "مریض کی معلومات اور لیب کی تفصیلات" : "Patient & Clinical Information"}
+        </h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 11px;">
+          <div>
+            <span style="color: #64748b; display: block; font-size: 10px;">${isUrdu ? "مریض کا نام:" : "Patient Name:"}</span>
+            <strong style="color: #0f172a;">${patientName}</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block; font-size: 10px;">${isUrdu ? "عمر اور جنس:" : "Age & Gender:"}</span>
+            <strong style="color: #0f172a;">${patientAge} • ${patientGender}</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block; font-size: 10px;">${isUrdu ? "نمونہ آئی ڈی:" : "Specimen ID:"}</span>
+            <strong style="color: #0f172a;">${specimenId}</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; display: block; font-size: 10px;">${isUrdu ? "معالج:" : "Referring Physician:"}</span>
+            <strong style="color: #0f172a;">${doctor}</strong>
+          </div>
+          <div style="grid-column: span 2;">
+            <span style="color: #64748b; display: block; font-size: 10px;">${isUrdu ? "لیبارٹری / ادارہ:" : "Testing Facility / Lab:"}</span>
+            <strong style="color: #0f172a;">${facility}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Overall Clinical Assessment -->
+      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; background-color: #ffffff;">
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 3px; letter-spacing: 0.5px;">
+          ${isUrdu ? "1. مجموعی تشخیصی کیفیت" : "1. Overall Clinical Assessment"}
+        </span>
+        <p style="font-size: 11.5px; margin: 0; font-weight: 600; color: ${severityColor};">
+          ${report.overallStatus}
+        </p>
+      </div>
+
+      <!-- 2. Virus & Pathogen Screening -->
+      ${report.virusAndInfectionDetection ? `
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; background-color: #f8fafc;">
+          <h3 style="font-size: 11px; font-weight: 700; margin: 0 0 4px 0; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${isUrdu ? "2. وائرل اور پیتھوجن انفیکشن اسکریننگ" : "2. Infection & Pathogen Screening"}
+          </h3>
+          <p style="font-size: 11px; margin: 0 0 4px 0; color: #1e293b; font-weight: 600;">
+            <strong>${isUrdu ? "حالت: " : "Status: "}</strong> ${report.virusAndInfectionDetection.status}
+          </p>
+          ${report.virusAndInfectionDetection.details ? `
+            <p style="font-size: 10.5px; margin: 0; color: #475569;">
+              ${report.virusAndInfectionDetection.details}
+            </p>
+          ` : ""}
+        </div>
+      ` : ""}
+
+      <!-- 3. Biomarkers Table -->
+      ${report.biomarkers && report.biomarkers.length > 0 ? `
+        <div style="margin-bottom: 14px;">
+          <h3 style="font-size: 11px; font-weight: 700; margin: 0 0 6px 0; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${isUrdu ? "3. لیبارٹری ٹیسٹ نتائج اور بائیو مارکرز" : "3. Laboratory Parameters & Biomarkers"}
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #cbd5e1;">
+            <thead>
+              <tr style="background-color: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                <th style="padding: 6px 8px; text-align: ${isUrdu ? "right" : "left"}; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700;">
+                  ${isUrdu ? "ٹیسٹ پیرامیٹر" : "Test Parameter"}
+                </th>
+                <th style="padding: 6px 8px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700; width: 120px;">
+                  ${isUrdu ? "نتیجہ" : "Result"}
+                </th>
+                <th style="padding: 6px 8px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700; width: 130px;">
+                  ${isUrdu ? "نارمل رینج" : "Reference Range"}
+                </th>
+                <th style="padding: 6px 8px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 700; width: 100px;">
+                  ${isUrdu ? "حیثیت" : "Status"}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              ${biomarkersRows}
+            </tbody>
+          </table>
+        </div>
+      ` : ""}
+
+      <!-- 4. Sickness / Pathology Explanations -->
+      ${sicknessList ? `
+        <div style="margin-bottom: 14px;">
+          <h3 style="font-size: 11px; font-weight: 700; margin: 0 0 4px 0; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${isUrdu ? "4. طبی وضاحت اور علامات کی تشریح" : "4. Physiological & Pathology Explanations"}
+          </h3>
+          <ul style="margin: 0; padding-left: ${isUrdu ? "0" : "18px"}; padding-right: ${isUrdu ? "18px" : "0"}; font-size: 10.5px; color: #334155; line-height: 1.4;">
+            ${sicknessList}
+          </ul>
+        </div>
+      ` : ""}
+
+      <!-- 5. Doctor Recommendations -->
+      ${doctorList ? `
+        <div style="margin-bottom: 14px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; background-color: #f8fafc;">
+          <h3 style="font-size: 11px; font-weight: 700; margin: 0 0 4px 0; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${isUrdu ? "5. معالج کے لیے اہم تجاویز اور رہنمائی" : "5. Physician Recommendations & Action Plan"}
+          </h3>
+          <ul style="margin: 0; padding-left: ${isUrdu ? "0" : "18px"}; padding-right: ${isUrdu ? "18px" : "0"}; font-size: 10.5px; color: #334155; line-height: 1.4;">
+            ${doctorList}
+          </ul>
+        </div>
+      ` : ""}
+
+      <!-- Footer Disclaimer -->
+      <div style="border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 14px; font-size: 8.5px; color: #94a3b8; text-align: center;">
+        ${isUrdu
+          ? "نوٹ: یہ خودکار رپورٹ AI کی مدد سے تیار کردہ معلوماتی دستاویز ہے۔ حتمی تشخیص اور علاج کے لیے مستند معالج سے رجوع کریں۔"
+          : "Disclaimer: This automated diagnostic report is prepared for clinical decision support. Final medical evaluation must be verified by a licensed healthcare professional."}
+      </div>
+    </div>
+  `;
+}
+
+// Main Component
 export default function AnalyzePage() {
   const { lang, t } = useLanguage();
 
@@ -82,6 +271,7 @@ export default function AnalyzePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reportContainerRef = useRef<HTMLDivElement>(null);
@@ -110,10 +300,28 @@ export default function AnalyzePage() {
     }
   };
 
+  const getResolvedMimeType = (file: File): string => {
+    if (file.type && file.type !== "application/octet-stream") return file.type;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    switch (ext) {
+      case "pdf": return "application/pdf";
+      case "png": return "image/png";
+      case "jpg":
+      case "jpeg": return "image/jpeg";
+      case "webp": return "image/webp";
+      case "heic": return "image/heic";
+      case "heif": return "image/heif";
+      case "txt": return "text/plain";
+      case "csv": return "text/csv";
+      default: return "application/pdf";
+    }
+  };
+
   const processFile = (file: File) => {
+    setErrorMessage(null);
     const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
-    const detectedMime = file.type || "application/octet-stream";
-    const isText = file.type.includes("text") || file.name.endsWith(".txt");
+    const detectedMime = getResolvedMimeType(file);
+    const isText = detectedMime.startsWith("text/") || file.name.endsWith(".txt") || file.name.endsWith(".csv");
 
     const reader = new FileReader();
 
@@ -129,10 +337,8 @@ export default function AnalyzePage() {
       };
       reader.readAsText(file);
     } else {
-      // For PDF, images etc — read as base64 so Gemini can process the document directly
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
-        // Strip "data:<mime>;base64," prefix to get pure base64
         const base64 = dataUrl.split(",")[1] || "";
         setSelectedFile({
           name: file.name,
@@ -151,6 +357,7 @@ export default function AnalyzePage() {
     if (!selectedFile) return;
 
     setIsAnalyzing(true);
+    setErrorMessage(null);
     setAnalysisProgress(10);
     setCurrentStep(1);
 
@@ -183,9 +390,13 @@ export default function AnalyzePage() {
 
       if (data.success && data.report) {
         setActiveReport(data.report);
+      } else {
+        const errText = data.error || (selectedReportLang === "ur" ? "رپورٹ تیار کرنے میں دشواری ہوئی۔ براہ کرم دوبارہ کوشش کریں۔" : "Failed to generate report. Please verify your GEMINI_API_KEY environment variable in Vercel.");
+        setErrorMessage(errText);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("AI API call failed:", err);
+      setErrorMessage(err?.message || (selectedReportLang === "ur" ? "سرور سے رابطہ نہ ہو سکا۔" : "Network error connecting to analysis server."));
     } finally {
       clearInterval(interval);
       setAnalysisProgress(100);
@@ -203,6 +414,7 @@ export default function AnalyzePage() {
     setIsAnalyzing(false);
     setAnalysisProgress(0);
     setCurrentStep(0);
+    setErrorMessage(null);
   };
 
   // Copy summary to clipboard
@@ -239,66 +451,59 @@ ${activeReport.doctorRecommendations.map((r) => `- ${r}`).join("\n")}
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // High-Resolution Dark-Mode PDF Auto-Downloader (Preserves Exact On-Screen AI Layout & Urdu Typography)
+  // Dynamic Clean PDF Download (Zero Bleed-through, Zero Blank Pages, Full Urdu & English Support)
   const handleDownloadPdf = async () => {
-    if (!activeReport || !reportContainerRef.current) return;
+    if (!activeReport) return;
     setIsGeneratingPdf(true);
 
+    // Create temporary off-screen container mounted dynamically in DOM
+    const tempContainer = document.createElement("div");
+    tempContainer.style.position = "fixed";
+    tempContainer.style.top = "0";
+    tempContainer.style.left = "0";
+    tempContainer.style.width = "794px";
+    tempContainer.style.zIndex = "-999999";
+    tempContainer.style.backgroundColor = "#ffffff";
+    tempContainer.innerHTML = generateReportHtml(activeReport, selectedReportLang === "ur");
+    document.body.appendChild(tempContainer);
+
     try {
-      const { toPng } = await import("html-to-image");
-      const { jsPDF } = await import("jspdf");
-
-      const element = reportContainerRef.current;
-
-      // Render exact DOM node into a high-res 2x PNG (supports all fonts, Urdu ligatures, dark glows, and CSS3)
-      const dataUrl = await toPng(element, {
-        quality: 0.98,
-        pixelRatio: 2, // 2x crisp scale for high-definition print quality
-        backgroundColor: "#050508", // matching dark clinical aesthetic
-        cacheBust: true,
-      });
-
-      // Load image into memory to get natural dimensions
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pdfWidth = 210; // A4 standard width in mm
-      const pageHeight = 297; // A4 standard height in mm
-      const imgHeight = (img.height * pdfWidth) / img.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
-      heightLeft -= pageHeight;
-
-      // Add subsequent pages if report spans more than one A4 page
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, imgHeight, undefined, "FAST");
-        heightLeft -= pageHeight;
-      }
+      const html2pdf = (await import("html2pdf.js")).default;
 
       const rawName = activeReport.patientInfo?.name || activeReport.title || "Diagnostic_Report";
       const safeName = rawName.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, "_");
 
-      // Automatically trigger instant file download in browser
-      pdf.save(`MediReport_${safeName}.pdf`);
+      const opt = {
+        margin: [8, 8, 8, 8] as [number, number, number, number],
+        filename: `MediReport_${safeName}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          scrollY: 0,
+          scrollX: 0,
+          windowWidth: 794
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait" as const
+        },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+      };
+
+      const targetElement = (tempContainer.firstElementChild as HTMLElement) || tempContainer;
+      await html2pdf().set(opt).from(targetElement).save();
     } catch (err) {
-      console.error("High-fidelity PDF auto-download error:", err);
-      // Fallback: window.print if device doesn't support canvas export
+      console.error("Clean PDF download error:", err);
       window.print();
     } finally {
+      // Always remove temporary container from DOM
+      if (tempContainer.parentNode) {
+        tempContainer.parentNode.removeChild(tempContainer);
+      }
       setIsGeneratingPdf(false);
     }
   };
@@ -475,6 +680,30 @@ ${activeReport.doctorRecommendations.map((r) => `- ${r}`).join("\n")}
               </button>
             </div>
           )}
+
+          {/* Error Message Alert */}
+          {errorMessage && (
+            <div className="mt-6 p-4 rounded-2xl bg-red-950/40 border border-red-500/50 text-red-200 text-sm flex items-start gap-3 backdrop-blur-md animate-fade-in">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-red-300">
+                  {selectedReportLang === "ur" ? "تجزیہ مکمل نہیں ہو سکا" : "Analysis Failed"}
+                </p>
+                <p className="text-xs text-red-200/80 mt-1 leading-relaxed">{errorMessage}</p>
+                {errorMessage.includes("GEMINI_API_KEY") && (
+                  <p className="text-xs text-amber-300 mt-2 font-mono bg-neutral-900/80 p-2 rounded-lg border border-amber-500/30">
+                    💡 Tip: Go to Vercel Dashboard → Project Settings → Environment Variables → Add <b>GEMINI_API_KEY</b> and redeploy.
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-gray-400 hover:text-white text-xs p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* AI PROCESSING PROGRESS VISUALIZER */}
@@ -556,7 +785,7 @@ ${activeReport.doctorRecommendations.map((r) => `- ${r}`).join("\n")}
                   ) : (
                     <Download className="w-4 h-4 text-white" />
                   )}
-                  <span>{selectedReportLang === "ur" ? "پی ڈی ایف رپورٹ ڈاؤن لوڈ کریں" : "Download PDF File Now"}</span>
+                  <span>{selectedReportLang === "ur" ? "پی ڈی ایف رپورٹ ڈاؤن لوڈ کریں" : "Download PDF Report"}</span>
                 </button>
               </div>
             </div>
