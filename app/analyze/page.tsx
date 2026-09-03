@@ -319,7 +319,17 @@ export default function AnalyzePage() {
 
   const processFile = (file: File) => {
     setErrorMessage(null);
-    const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+    const sizeInMbNum = file.size / (1024 * 1024);
+    const sizeInMb = sizeInMbNum.toFixed(2);
+    
+    if (sizeInMbNum > 4.2) {
+      setErrorMessage(
+        selectedReportLang === "ur"
+          ? "فائل کا سائز 4.2MB سے زیادہ ہے۔ براہ کرم 4MB سے چھوٹی فائل اپ لوڈ کریں۔"
+          : "File size exceeds 4.2MB. Vercel serverless functions limit uploads to 4.5MB. Please upload a smaller or compressed document."
+      );
+    }
+
     const detectedMime = getResolvedMimeType(file);
     const isText = detectedMime.startsWith("text/") || file.name.endsWith(".txt") || file.name.endsWith(".csv");
 
@@ -386,12 +396,41 @@ export default function AnalyzePage() {
         })
       });
 
-      const data = await response.json();
+      let data: any = null;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const rawText = await response.text();
+        try {
+          data = JSON.parse(rawText);
+        } catch {
+          if (response.status === 504) {
+            throw new Error(
+              selectedReportLang === "ur"
+                ? "سرور پر وقت ختم ہو گیا۔ براہ کرم ہلکی فائل یا دوبارہ کوشش کریں۔"
+                : "Request timed out on Vercel (504). Please try a smaller file or try again."
+            );
+          } else if (response.status === 413) {
+            throw new Error(
+              selectedReportLang === "ur"
+                ? "فائل کا سائز بہت زیادہ ہے۔ براہ کرم 4MB سے کم سائز کی فائل اپ لوڈ کریں۔"
+                : "File size exceeds Vercel limits (4.5MB). Please upload a smaller file."
+            );
+          } else {
+            throw new Error(
+              selectedReportLang === "ur"
+                ? "سرور سے رابطہ کے دوران خرابی پیش آئی۔ براہ کرم Vercel لاگز چیک کریں۔"
+                : `Server error (${response.status}): ${rawText.slice(0, 150) || "Service unavailable"}`
+            );
+          }
+        }
+      }
 
-      if (data.success && data.report) {
+      if (data && data.success && data.report) {
         setActiveReport(data.report);
       } else {
-        const errText = data.error || (selectedReportLang === "ur" ? "رپورٹ تیار کرنے میں دشواری ہوئی۔ براہ کرم دوبارہ کوشش کریں۔" : "Failed to generate report. Please verify your GEMINI_API_KEY environment variable in Vercel.");
+        const errText = data?.error || (selectedReportLang === "ur" ? "رپورٹ تیار کرنے میں دشواری ہوئی۔ براہ کرم Vercel کی سیٹنگز میں GEMINI_API_KEY چیک کریں۔" : "Failed to generate report. Please verify your GEMINI_API_KEY in Vercel Project Settings.");
         setErrorMessage(errText);
       }
     } catch (err: any) {

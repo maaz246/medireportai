@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
-// Vercel serverless function max execution time (up to 60s)
+// Vercel serverless function max execution time
 export const maxDuration = 60;
 
 function resolveMimeType(mime?: string | null, fileName?: string | null): string {
@@ -35,16 +35,24 @@ function resolveMimeType(mime?: string | null, fileName?: string | null): string
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // fileBase64: raw base64 string (no data: prefix), mimeType: actual mime
     const { fileName, fileText, fileBase64, mimeType, fileType, reportLang = "en" } = body;
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
     const isUrdu = reportLang === "ur";
 
-    if (apiKey) {
-      const client = new GoogleGenAI({ apiKey });
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "GEMINI_API_KEY is not configured in Vercel environment variables. Please add GEMINI_API_KEY in your Vercel Project Settings and redeploy."
+        },
+        { status: 500 }
+      );
+    }
 
-      const instructions = `
+    const client = new GoogleGenAI({ apiKey });
+
+    const instructions = `
 You are an expert clinical medical report analyst. Your task is to:
 1. READ the uploaded medical document carefully.
 2. EXTRACT real patient details exactly as they appear in the document. Never invent or assume patient details.
@@ -114,137 +122,137 @@ JSON STRUCTURE:
 }
 `.trim();
 
-      const finalMime = resolveMimeType(mimeType || fileType, fileName);
-      const isTextFile = !fileBase64 || finalMime.startsWith("text/") || fileName?.endsWith(".txt") || fileName?.endsWith(".csv");
+    const finalMime = resolveMimeType(mimeType || fileType, fileName);
+    const isTextFile = !fileBase64 || finalMime.startsWith("text/") || fileName?.endsWith(".txt") || fileName?.endsWith(".csv");
 
-      // Build the content parts for Gemini — use multimodal for PDF/image files
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let contents: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let contents: any[];
 
-      if (isTextFile && fileText) {
-        // Plain text report: send as text
-        contents = [{
-          role: "user",
-          parts: [
-            { text: instructions },
-            { text: `\n\nREPORT TEXT CONTENT:\n---\n${fileText.slice(0, 10000)}\n---\n\nFile name: ${fileName || "report"}` }
-          ]
-        }];
-      } else if (fileBase64) {
-        // PDF, image or binary — send as inline base64 for Gemini to directly read
-        contents = [{
-          role: "user",
-          parts: [
-            { text: instructions },
-            {
-              inlineData: {
-                mimeType: finalMime,
-                data: fileBase64
-              }
-            },
-            { text: `\nFile name: ${fileName || "report"}. Extract all patient information and analyze all test results from the document above.` }
-          ]
-        }];
-      } else {
-        // Fallback: only file name available
-        contents = [{
-          role: "user",
-          parts: [
-            { text: instructions },
-            { text: `File name: ${fileName || "Medical_Report"}. No readable content available. Generate a clinically appropriate analysis based on the file name type, but set all patientInfo fields to "Not Available".` }
-          ]
-        }];
-      }
-
-      // Candidate models in order of quota availability and performance
-      const candidateModels = [
-        "gemini-3.6-flash",
-        "gemini-3.1-flash-lite-preview",
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-3.1-pro-preview",
-      ];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let response: any = null;
-      let lastModelError: any = null;
-      let isQuotaExceeded = false;
-
-      for (const model of candidateModels) {
-        for (let attempt = 1; attempt <= 2; attempt++) {
-          try {
-            response = await client.models.generateContent({
-              model,
-              contents,
-              config: {
-                responseMimeType: "application/json",
-              },
-            });
-            if (response && response.text) {
-              break;
+    if (isTextFile && fileText) {
+      contents = [{
+        role: "user",
+        parts: [
+          { text: instructions },
+          { text: `\n\nREPORT TEXT CONTENT:\n---\n${fileText.slice(0, 10000)}\n---\n\nFile name: ${fileName || "report"}` }
+        ]
+      }];
+    } else if (fileBase64) {
+      contents = [{
+        role: "user",
+        parts: [
+          { text: instructions },
+          {
+            inlineData: {
+              mimeType: finalMime,
+              data: fileBase64
             }
-          } catch (err: any) {
-            const msg = err?.message || String(err);
-            console.warn(`Model ${model} (attempt ${attempt}) failed:`, msg);
-            lastModelError = err;
+          },
+          { text: `\nFile name: ${fileName || "report"}. Extract all patient information and analyze all test results from the document above.` }
+        ]
+      }];
+    } else {
+      contents = [{
+        role: "user",
+        parts: [
+          { text: instructions },
+          { text: `File name: ${fileName || "Medical_Report"}. No readable content available. Generate a clinically appropriate analysis based on the file name type, but set all patientInfo fields to "Not Available".` }
+        ]
+      }];
+    }
 
-            // Check for rate limit / quota exhaustion (429)
-            if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("Quota exceeded") || err?.status === 429) {
-              isQuotaExceeded = true;
-              // If it's a short per-second delay, wait briefly before next model
-              await new Promise((resolve) => setTimeout(resolve, 1500));
-            } else if (attempt < 2 && (msg.includes("503") || msg.includes("demand") || err?.status === 503)) {
-              // Temporary server demand spike
-              await new Promise((resolve) => setTimeout(resolve, 1200));
-            } else {
-              // If model not found or permanent error, skip immediately to next model
-              break;
-            }
-          }
-        }
+    // Supported high-performance Gemini models
+    const candidateModels = [
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-pro-preview",
+      "gemini-3.1-flash-lite",
+    ];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let response: any = null;
+    let lastModelError: any = null;
+    let isQuotaExceeded = false;
+    let isKeyInvalid = false;
+
+    for (const model of candidateModels) {
+      try {
+        response = await client.models.generateContent({
+          model,
+          contents,
+          config: {
+            responseMimeType: "application/json",
+          },
+        });
         if (response && response.text) {
           break;
         }
-      }
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        console.warn(`Model ${model} execution error:`, msg);
+        lastModelError = err;
 
-      if (!response || !response.text) {
-        if (isQuotaExceeded) {
-          const quotaMsg = isUrdu
-            ? "جیمنی اے آئی فری کوٹہ کی عارضی حد (Rate Limit) مکمل ہو چکی ہے۔ براہ کرم 10 سیکنڈ انتظار کے بعد دوبارہ کوشش کریں۔"
-            : "Gemini API free tier rate limit reached (requests per minute limit). Please wait ~10 seconds and try again, or use an API key with higher quota.";
-          return NextResponse.json({ success: false, error: quotaMsg }, { status: 429 });
+        if (
+          msg.includes("API_KEY_INVALID") ||
+          msg.includes("API key not valid") ||
+          msg.includes("UNAUTHENTICATED") ||
+          err?.status === 400 ||
+          err?.status === 401 ||
+          err?.status === 403
+        ) {
+          isKeyInvalid = true;
+          break; // Stop immediately on invalid key
         }
-        throw new Error(lastModelError?.message || "Failed to generate report with available AI models");
-      }
 
-      const rawText = response.text || "";
-      const cleanedText = rawText
-        .replace(/```json\s*/gi, "")
-        .replace(/```\s*/g, "")
-        .trim();
-
-      try {
-        const parsed = JSON.parse(cleanedText);
-        return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
-      } catch (parseErr) {
-        console.warn("JSON parse failed on raw response, attempting regex extraction:", parseErr);
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
+        if (
+          msg.includes("429") ||
+          msg.includes("RESOURCE_EXHAUSTED") ||
+          msg.includes("Quota exceeded") ||
+          err?.status === 429
+        ) {
+          isQuotaExceeded = true;
         }
-        throw new Error("Unable to parse JSON from AI model response");
       }
     }
 
-    // Fallback: API key missing
-    return NextResponse.json(
-      {
-        success: false,
-        error: "GEMINI_API_KEY is not configured in environment variables. Please add GEMINI_API_KEY in your Vercel Project Settings."
-      },
-      { status: 500 }
-    );
+    if (isKeyInvalid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: isUrdu
+            ? "جیمنی اے آئی کی (API Key) درست نہیں ہے۔ براہ کرم گوگل اے آئی اسٹوڈیو کی درست کی فراہم کریں۔"
+            : "The provided GEMINI_API_KEY is invalid or unauthorized. Please verify your Google AI Studio API key in your Vercel Project Settings."
+        },
+        { status: 401 }
+      );
+    }
+
+    if (!response || !response.text) {
+      if (isQuotaExceeded) {
+        const quotaMsg = isUrdu
+          ? "جیمنی اے آئی فری کوٹہ کی حد (Rate Limit) مکمل ہو چکی ہے۔ براہ کرم 10 سیکنڈ بعد دوبارہ کوشش کریں۔"
+          : "Gemini API rate limit reached. Please wait ~10 seconds and try again.";
+        return NextResponse.json({ success: false, error: quotaMsg }, { status: 429 });
+      }
+      throw new Error(lastModelError?.message || "Failed to generate report with available AI models");
+    }
+
+    const rawText = response.text || "";
+    const cleanedText = rawText
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
+    try {
+      const parsed = JSON.parse(cleanedText);
+      return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
+    } catch {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return NextResponse.json({ success: true, report: parsed, source: "Advanced Diagnostic Engine" });
+      }
+      throw new Error("Unable to parse structured JSON from AI model response");
+    }
 
   } catch (error: any) {
     console.error("Diagnostic Analysis Error:", error);
@@ -254,11 +262,10 @@ JSON STRUCTURE:
       {
         success: false,
         error: isQuota
-          ? "Gemini API rate limit reached. Please wait 10 seconds and try again."
+          ? "Gemini API rate limit reached. Please wait a few moments and try again."
           : msg
       },
       { status: isQuota ? 429 : 500 }
     );
   }
 }
-
